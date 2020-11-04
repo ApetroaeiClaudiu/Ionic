@@ -23,14 +23,21 @@ import '@ionic/react/css/display.css';
 /* Theme variables */
 import './theme/variables.css';
 
+import {MoviesList,MoviesEdit} from './Movies';
+import { MovieProvider } from './Movies/MovieProvider';
+
 const App: React.FC = () => (
   <IonApp>
-    <IonReactRouter>
-      <IonRouterOutlet>
-        <Route path="/home" component={Home} exact={true} />
-        <Route exact path="/" render={() => <Redirect to="/home" />} />
-      </IonRouterOutlet>
-    </IonReactRouter>
+    <MovieProvider>
+      <IonReactRouter>
+        <IonRouterOutlet>
+          <Route path="/movies" component={MoviesList} exact={true}/>
+          <Route path="/movie" component={MoviesEdit} exact={true}/>
+          <Route path="/movie/:id" component={MoviesEdit} exact={true}/>
+          <Route exact path="/" render={() => <Redirect to="/movies" />} />
+        </IonRouterOutlet>
+      </IonReactRouter>
+    </MovieProvider>
   </IonApp>
 );
 
