@@ -2,7 +2,6 @@ import React from 'react';
 import { Redirect, Route } from 'react-router-dom';
 import { IonApp, IonRouterOutlet } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import Home from './pages/Home';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -25,19 +24,23 @@ import './theme/variables.css';
 
 import {MoviesList,MoviesEdit} from './Movies';
 import { MovieProvider } from './Movies/MovieProvider';
+import { AuthProvider, Login, PrivateRoute } from './auth';
 
 const App: React.FC = () => (
   <IonApp>
-    <MovieProvider>
-      <IonReactRouter>
-        <IonRouterOutlet>
-          <Route path="/movies" component={MoviesList} exact={true}/>
-          <Route path="/movie" component={MoviesEdit} exact={true}/>
-          <Route path="/movie/:id" component={MoviesEdit} exact={true}/>
+    <IonReactRouter>
+      <IonRouterOutlet>
+        <AuthProvider>
+          <Route path="/login" component={Login} exact={true}/>
+          <MovieProvider>
+            <PrivateRoute path="/movies" component={MoviesList} exact={true}/>
+            <PrivateRoute path="/movie" component={MoviesEdit} exact={true}/>
+            <PrivateRoute path="/movie/:id" component={MoviesEdit} exact={true}/>
+          </MovieProvider>
           <Route exact path="/" render={() => <Redirect to="/movies" />} />
-        </IonRouterOutlet>
-      </IonReactRouter>
-    </MovieProvider>
+        </AuthProvider>
+      </IonRouterOutlet>
+    </IonReactRouter>
   </IonApp>
 );
 

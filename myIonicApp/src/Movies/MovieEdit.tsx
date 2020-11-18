@@ -24,7 +24,7 @@ interface MovieEditProps extends RouteComponentProps<{
 }> {}
 
 const MovieEdit: React.FC<MovieEditProps> = ({ history, match }) => {
-  const { movies, saving, deleted,  savingError, deleteError,saveMovie,deleteMovie } = useContext(MovieContext);
+  const { movies, saving, deleting,  savingError,saveMovie } = useContext(MovieContext);
   const [title,setTitle] = useState('');
   const [director,setDirector] = useState('');
   const [year,setYear] = useState(new Date());
@@ -33,9 +33,9 @@ const MovieEdit: React.FC<MovieEditProps> = ({ history, match }) => {
   const [movie, setMovie] = useState<MovieProps>();
 
   useEffect(() => {
-    log('useEffect');
+    //log('useEffect');
     const routeId = match.params.id || '';
-    const movie = movies?.find(mov => mov.id?.toString() === routeId);
+    const movie = movies?.find(mov => mov._id?.toString() === routeId);
     setMovie(movie);
     if (movie) {
       setTitle(movie.title);
@@ -50,12 +50,6 @@ const MovieEdit: React.FC<MovieEditProps> = ({ history, match }) => {
     const editedMovie = movie ? { ...movie, title,director,year,treiD,price } : { title,director,year,treiD,price };
     saveMovie && saveMovie(editedMovie).then(() => history.goBack());
   };
-  const handleDelete = ()=>{
-    const deletedMovie = movie ? { ...movie, title,director,year,treiD,price } : { title,director,year,treiD,price };
-    deleteMovie && deleteMovie(deletedMovie).then(() => history.goBack());
-  }
-  const displayDeleteButton = movie ? <IonButtons slot="end"><IonButton onClick={handleDelete}>Delete</IonButton></IonButtons> : '';
-
   log('render');
   return (
     <IonPage>
@@ -67,21 +61,22 @@ const MovieEdit: React.FC<MovieEditProps> = ({ history, match }) => {
               Save
             </IonButton>
           </IonButtons>
-          {displayDeleteButton}
         </IonToolbar>
       </IonHeader>
       <IonContent>
+        <IonTitle>Title</IonTitle>
         <IonInput value={title} onIonChange={e => setTitle(e.detail.value || '')} />
+        <IonTitle>Director</IonTitle>
         <IonInput value={director} onIonChange={e => setDirector(e.detail.value || '')} />
+        <IonTitle>Year</IonTitle>
         <IonDatetime displayFormat="MM DD YY" value={year.toString()} onIonChange={e => setYear(new Date(e.detail.value!))}></IonDatetime>
+        <IonTitle>3D</IonTitle>
         <IonCheckbox checked={treiD} onIonChange={e => setTreiD(e.detail.checked)} />
+        <IonTitle>Price</IonTitle>
         <IonInput type="number" value={price} onIonChange={e => setPrice(parseInt(e.detail.value!,0))} />
-        <IonLoading isOpen={saving || deleted} />
+        <IonLoading isOpen={saving || deleting} />
         {savingError && (
           <div>{savingError.message || 'Failed to save movie'}</div>
-        )}
-        {deleteError && (
-          <div>{deleteError.message || 'Failed to delete movie'}</div>
         )}
         </IonContent>
     </IonPage>

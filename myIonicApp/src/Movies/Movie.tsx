@@ -1,16 +1,20 @@
 import React from 'react';
-import { IonItem, IonLabel } from '@ionic/react';
+import { IonCheckbox, IonIcon, IonItem, IonItemOptions, IonLabel } from '@ionic/react';
 import {MovieProps} from './MovieProps';
+import { trash } from 'ionicons/icons';
 
 interface MoviePropsExt extends MovieProps {
-  onEdit: (id?: number) => void;
+  onEdit: (id?: string) => void;
+  onDelete: (id?: string) => void;
 }
 
-const Movie: React.FC<MoviePropsExt> = ({ id, director,title,year,treiD,price, onEdit }) => {
-  console.log(treiD);
+const Movie: React.FC<MoviePropsExt> = ({ _id, director,title,year,treiD,price, onEdit,onDelete }) => {
+  //console.log(treiD);
   return (
-    <IonItem onClick={() => onEdit(id)}>
-        <IonLabel>Movie : {title} by {director} in {year} with: {price} and {treiD}</IonLabel>
+    <IonItem>
+        <IonLabel onClick={() => onEdit(_id)}>{title} {director} {price} </IonLabel>
+            <IonIcon icon={trash} onClick={() => onDelete(_id)}/>
+            {/* <IonCheckbox checked={treiD}/> */}
     </IonItem>
   );
 };
