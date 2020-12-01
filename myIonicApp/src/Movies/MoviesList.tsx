@@ -1,4 +1,4 @@
-import React, {useContext, useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import {Redirect, RouteComponentProps} from 'react-router';
 import {
     IonButton, IonCheckbox,
@@ -7,10 +7,12 @@ import {
     IonFabButton,
     IonHeader,
     IonIcon, IonInfiniteScroll, IonInfiniteScrollContent,
+    IonLabel,
     IonList,
     IonLoading,
     IonPage, IonRow, IonSearchbar, IonSelect, IonSelectOption,
     IonTitle,
+    IonToast,
     IonToolbar, useIonViewDidEnter, useIonViewWillEnter
 } from '@ionic/react';
 import {add} from 'ionicons/icons';
@@ -18,6 +20,7 @@ import {getLogger} from '../core';
 import {AuthContext} from "../auth";
 import { MovieContext } from './MovieProvider';
 import Movie from './Movie';
+import { Network } from '@capacitor/core';
 
 const log = getLogger('ItemList');
 // Here starts the magic.
@@ -31,8 +34,25 @@ let searchName: string = '';
 const MoviesList: React.FC<RouteComponentProps> = ({history}) => {
     const [disableInfiniteScroll, setDisableInfiniteScroll] = useState<boolean>(false);
     const {movies, fetching, fetchingError, _deleteMovie, fetchMovies, reloadMovies} = useContext(MovieContext);
+    const [status,setStatus] = useState<boolean>(true);
+    Network.getStatus().then(status => setStatus(status.connected));
+    
+    const {connectedNetworkStatus, savedOffline, setSavedOffline} = useContext(MovieContext);
+    const {conflictMovies} = useContext(MovieContext);
+    useEffect(conflictMoviesEffect,[conflictMovies]);
+
     const {token, logout} = useContext(AuthContext);
     const [filter, setFilter] = useState<string | undefined>(undefined);
+
+    Network.addListener('networkStatusChange',async(status)=>{
+        setStatus(status.connected);
+    });
+
+    function conflictMoviesEffect(){
+        if(conflictMovies && conflictMovies.length>0){
+            history.push('/movies/conflict');
+        }
+    }
 
     useIonViewDidEnter(async () => {
         //console.log('[useIon] calling fetch');
@@ -65,13 +85,20 @@ const MoviesList: React.FC<RouteComponentProps> = ({history}) => {
         logout?.();
         return <Redirect to={{pathname: "/login"}}/>;
     };
-    log('render');
+
+    const ceva = () =>{
+
+    };
+
     return (
         <IonPage>
             <IonHeader>
                 <IonToolbar>
                     <IonTitle>My App</IonTitle>
                     <IonButton class="ion-margin-end" onClick={handleLogout}>Logout</IonButton>
+                    <IonLabel>
+                        Connection is : {status?"connected":"disconnected"}
+                    </IonLabel>
                     <IonSelect value={filter} placeholder={"Select a filter"} onIonChange={e => selectVal(e.detail.value)}>
                         <IonSelectOption value="any">Any</IonSelectOption>
                         <IonSelectOption value="yes">Yes</IonSelectOption>
@@ -89,10 +116,10 @@ const MoviesList: React.FC<RouteComponentProps> = ({history}) => {
                 {movies && (
                     <IonList>
                         {
-                            movies.map(({_id,title,director,year,treiD,price}) =>
-                                <Movie key={_id} _id={_id} title={title} director={director} year={year} treiD={treiD} price={price}
+                            movies.map(({_id,title,director,year,treiD,price,userId}) =>
+                                <Movie key={_id} _id={_id} title={title} director={director} year={year} treiD={treiD} price={price} userId={userId}
                                       onEdit={_id => history.push(`/movie/${_id}`)} onDelete={_id => {
-                                    _deleteMovie && _deleteMovie({_id: _id, title: title, director: director,year:year, treiD: treiD, price:price});
+                                    _deleteMovie && _deleteMovie({_id: _id, title: title, director: director,year:year, treiD: treiD, price:price,userId:userId});
                                 }}/>
                             )
                         }

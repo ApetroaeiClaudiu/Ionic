@@ -7,7 +7,7 @@ const {Storage} = Plugins;
 
 const log = getLogger('movieApi');
 
-const baseUrl = 'localhost:3000';
+const baseUrl = 'localhost:3001';
 const movieUrl = `http://${baseUrl}/api/movie`;
 
 interface ResponseProps<T> {
@@ -33,7 +33,39 @@ const config = {
   }
 };
 
+
+
+async function getMoviesLocal(_id:string):Promise<MovieProps[]>{
+  const  {keys} =await Storage.keys();
+  const movies = [];
+  for(const i in keys){
+    const key = keys[i];
+    if(!key.startsWith("_id") && !key.startsWith("user")){
+      const movie: MovieProps = await getStorage(key);
+      if(movie.userId === _id){
+        movies.push(movie);
+      }
+    }
+  }
+  return movies;
+}
+
+async function getStorage(key: string): Promise<any> {
+  const ret = await Storage.get({key: key});
+  // console.log("GEEEEEEEEEEEETSTORAGE");
+  // console.log(ret);
+  if (ret?.value) {
+      // console.log(ret.value);
+      // console.log(JSON.parse(ret.value));
+      return JSON.parse(ret.value);
+  }
+  return Promise.resolve();
+}
+
+
+
 export const getMovies: (token: string, offset: number, size: number, isGood: boolean | undefined, searchName: string) => Promise<MovieProps[]> = (token, offset, size, isGood, searchName) => {
+  console.log(movieUrl + `?offset=${offset}&size=${size}&isGood=${isGood}&nameFilter=${searchName}`);
   const result = axios.get(movieUrl + `?offset=${offset}&size=${size}&isGood=${isGood}&nameFilter=${searchName}`, authConfig(token));
   result.then(function (result) {
     //console.log("Entering movieApi - getMovies - No Network Will Throw HERE!");
@@ -48,7 +80,21 @@ export const getMovies: (token: string, offset: number, size: number, isGood: bo
   return withLogs(result, 'getItems');
 }
 
+export const syncData: (token:string,_id:string)=> Promise<MovieProps[]> = async (token:string,_id:string) => {
+  console.log("SYYYYYYYYYYYYYYYYYYYYYYYYYNC")
+  const movies = await getMoviesLocal(_id);
+  //<MovieProps[]>
+  const result = axios.post(`${movieUrl}/sync`,movies,authConfig(token));
+  result.then(async function (result){
+    result.data.forEach(async(item:MovieProps) =>{
+      console.log(item);
+    })
+  });
+  return withLogs(result,'syncData');
+}
+
 export const createMovie: (token: string, item: MovieProps) => Promise<MovieProps[]> = (token, item) => {
+  item._id = String(Date.now());
   const result = axios.post(movieUrl, item, authConfig(token));
   result.then(async function (result) {
     await Storage.set({

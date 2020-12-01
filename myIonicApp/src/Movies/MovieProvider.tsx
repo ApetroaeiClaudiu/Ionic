@@ -1,10 +1,10 @@
-import React, {useCallback, useContext, useEffect, useReducer} from 'react';
+import React, {useCallback, useContext, useEffect, useReducer, useState} from 'react';
 import PropTypes from 'prop-types';
 import {getLogger} from '../core';
 import {MovieProps} from './MovieProps';
-import {createMovie, deleteMovie, getMovies, newWebSocket, updateMovie} from './MovieApi';
+import {createMovie, deleteMovie, getMovies, newWebSocket, syncData, updateMovie} from './MovieApi';
 import {AuthContext} from "../auth";
-import {Storage} from "@capacitor/core";
+import {Plugins, Storage} from "@capacitor/core";
 
 const log = getLogger('MovieProvider');
 
@@ -12,6 +12,10 @@ type SaveMovieFn = (movie: MovieProps) => Promise<any>;
 type DeleteMovieFn = (movie: MovieProps) => Promise<any>;
 type FetchMoviesFn = (offset: number, size: number, isGood: boolean | undefined, searchName: string) => Promise<any>;
 type ReloadMoviesFn = (offset: number, size: number, isGood: boolean | undefined, searchName: string) => Promise<any>;
+
+
+
+
 
 export interface MoviesState {
     movies?: MovieProps[],
@@ -24,7 +28,13 @@ export interface MoviesState {
     deletingError?: Error | null,
     _deleteMovie?: DeleteMovieFn
     fetchMovies?: FetchMoviesFn,
-    reloadMovies?: ReloadMoviesFn
+    reloadMovies?: ReloadMoviesFn,
+    conflictMovies?:MovieProps[],
+    setConflictMovies?:Function
+    connectedNetworkStatus?: boolean,
+    setSavedOffline?:Function,
+    savedOffline?:boolean,
+
 }
 
 interface ActionProps {
@@ -99,21 +109,64 @@ interface MovieProviderProps {
     children: PropTypes.ReactNodeLike,
 }
 
+const {Network} = Plugins;
+
 export const MovieProvider: React.FC<MovieProviderProps> = ({children}) => {
+    const [connectedNetworkStatus, setConnectedNetworkStatus] = useState<boolean>(false);
+    Network.getStatus().then(status => setConnectedNetworkStatus(status.connected));
+    const [savedOffline, setSavedOffline] = useState<boolean>(false);
+    const [conflictMovies, setConflictMovies] = useState<MovieProps[]>([]);
+
     const {token, _id} = useContext(AuthContext);
     const [state, dispatch] = useReducer(reducer, initialState);
     const {movies, fetching, fetchingError, saving, savingError, deleting, deletingError} = state;
     useEffect(getMoviesEffect, [token]);
     useEffect(wsEffect, [token]);
-    const saveMovie = useCallback<SaveMovieFn>(saveMovieCallback, [token]);
-    const _deleteMovie = useCallback<DeleteMovieFn>(deleteMovieCallback, [token]);
-    const value = {movies, fetching, fetchingError, saving, savingError, saveMovie, deleting, deletingError, _deleteMovie, fetchMovies, reloadMovies};
+    useEffect(networkEffect, [token, setConflictMovies, setConnectedNetworkStatus]);
+
+    const saveMovie = useCallback<SaveMovieFn>(saveMovieCallback, [token,connectedNetworkStatus,setSavedOffline]);
+    const _deleteMovie = useCallback<DeleteMovieFn>(deleteMovieCallback, [token,connectedNetworkStatus,setSavedOffline]);
+    const value = {movies,
+         fetching,
+         fetchingError, 
+         saving, 
+         savingError, 
+         saveMovie, 
+         deleting, 
+         deletingError, 
+         _deleteMovie, 
+         fetchMovies, 
+         reloadMovies,
+         connectedNetworkStatus,
+         savedOffline,
+         setSavedOffline,
+         conflictMovies,};
     //log('returns');
     return (
         <MovieContext.Provider value={value}>
             {children}
         </MovieContext.Provider>
     );
+
+    function networkEffect(){
+        console.log("network effect");
+        let canceled = false;
+        Network.addListener('networkStatusChange',async(status)=>{
+            if(canceled){
+                return;
+            }
+            const connected:boolean = status.connected;
+            if(connected){
+                console.log("syncing");
+                const conflicts = await syncData(token,_id);
+                setConflictMovies(conflicts);
+            }
+            setConnectedNetworkStatus(status.connected);
+        });
+        return () =>{
+            canceled = true;
+        }
+    }
 
 
     async function fetchMovies(offset: number, size: number, isGood: boolean | undefined, searchName: string) {
@@ -135,6 +188,7 @@ export const MovieProvider: React.FC<MovieProviderProps> = ({children}) => {
                     Storage.get({key}).then(function (it) {
                         try {
                             const object = JSON.parse(it.value);
+                            console.log(object);
                             let isGoodFilter = true;
                             if(isGood !== undefined){
                                 isGoodFilter = object.isGood === isGood;
@@ -203,15 +257,30 @@ export const MovieProvider: React.FC<MovieProviderProps> = ({children}) => {
 
     async function saveMovieCallback(item: MovieProps) {
         try {
-            log('saveMovie started');
-            dispatch({type: SAVE_MOVIE_STARTED});
-            const savedMovie = await (item._id ? updateMovie(token, item) : createMovie(token, item));
-            //log('saveMovie succeeded');
-            dispatch({type: SAVE_MOVIE_SUCCEEDED, payload: {item: savedMovie}});
+            // log('saveMovie started');
+            if(connectedNetworkStatus===true){
+                dispatch({type: SAVE_MOVIE_STARTED});
+                const savedMovie = await (item._id ? updateMovie(token, item) : createMovie(token, item));
+                //log('saveMovie succeeded');
+                dispatch({type: SAVE_MOVIE_SUCCEEDED, payload: {item: savedMovie}}); 
+                console.log("adaugam in server");   
+            }
+            else{
+                item._id = item._id ? item._id : String(Date.now())
+                item.userId = _id;
+                await Storage.set({
+                    key: String(item._id),
+                    value: JSON.stringify(item)
+                });
+                dispatch({type: SAVE_MOVIE_SUCCEEDED, payload: {item}});
+                setSavedOffline(true);
+            }
         } catch (error) {
             //log('saveMovie failed');
             alert("OFFLINE!");
             item._id = item._id ? item._id : String(Date.now())
+            item.userId = _id;
+            console.log("adaugam in local storage");
             await Storage.set({
                 key: String(item._id),
                 value: JSON.stringify(item)
@@ -222,11 +291,20 @@ export const MovieProvider: React.FC<MovieProviderProps> = ({children}) => {
 
     async function deleteMovieCallback(item: MovieProps) {
       try {
-        log('deleteMovie started');
-        dispatch({type: DELETE_MOVIE_STARTED});
-        const deletedMovie = await deleteMovie(token, item._id as string);
-        //log('deleteMovie succeeded');
-        dispatch({type: DELETE_MOVIE_SUCCEEDED, payload: {item: deletedMovie}});
+        // log('deleteMovie started');
+        if(connectedNetworkStatus===true){
+            dispatch({type: DELETE_MOVIE_STARTED});
+            const deletedMovie = await deleteMovie(token, item._id as string);
+            //log('deleteMovie succeeded');
+            dispatch({type: DELETE_MOVIE_SUCCEEDED, payload: {item: item}});    
+        }
+        else{
+            await Storage.remove({
+                key: String(item._id)
+            });
+          dispatch({type: DELETE_MOVIE_SUCCEEDED, payload: {item}});
+          setSavedOffline(true);        
+        }
       } catch (error) {
         //log('deleteMovie failed');
           alert("OFFLINE!");

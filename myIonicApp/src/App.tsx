@@ -25,6 +25,7 @@ import './theme/variables.css';
 import {MoviesList,MoviesEdit} from './Movies';
 import { MovieProvider } from './Movies/MovieProvider';
 import { AuthProvider, Login, PrivateRoute } from './auth';
+import MoviesConflict from './Movies/MoviesConflict';
 
 const App: React.FC = () => (
   <IonApp>
@@ -33,6 +34,7 @@ const App: React.FC = () => (
         <AuthProvider>
           <Route path="/login" component={Login} exact={true}/>
           <MovieProvider>
+            <PrivateRoute path="/movies/conflict" component={MoviesConflict}/>
             <PrivateRoute path="/movies" component={MoviesList} exact={true}/>
             <PrivateRoute path="/movie" component={MoviesEdit} exact={true}/>
             <PrivateRoute path="/movie/:id" component={MoviesEdit} exact={true}/>

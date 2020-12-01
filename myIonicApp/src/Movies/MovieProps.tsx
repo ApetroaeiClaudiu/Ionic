@@ -4,6 +4,7 @@ export interface MovieProps {
     director:string;
     year:Date;
     treiD:boolean,
-    price:number
+    price:number,
+    userId:string
   }
   

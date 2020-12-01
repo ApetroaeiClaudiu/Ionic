@@ -31,6 +31,7 @@ const MovieEdit: React.FC<MovieEditProps> = ({ history, match }) => {
   const [treiD,setTreiD] = useState(false);
   const [price,setPrice] = useState(0);
   const [movie, setMovie] = useState<MovieProps>();
+  const [userId, setUserId] =useState('');
 
   useEffect(() => {
     //log('useEffect');
@@ -43,11 +44,12 @@ const MovieEdit: React.FC<MovieEditProps> = ({ history, match }) => {
       setYear(movie.year);
       setTreiD(movie.treiD);
       setPrice(movie.price);
+      setUserId(movie.userId);
     }
   }, [match.params.id, movies]);
   
   const handleSave = () => {
-    const editedMovie = movie ? { ...movie, title,director,year,treiD,price } : { title,director,year,treiD,price };
+    const editedMovie = movie ? { ...movie, title,director,year,treiD,price,userId } : { title,director,year,treiD,price,userId };
     saveMovie && saveMovie(editedMovie).then(() => history.goBack());
   };
   log('render');
@@ -64,15 +66,10 @@ const MovieEdit: React.FC<MovieEditProps> = ({ history, match }) => {
         </IonToolbar>
       </IonHeader>
       <IonContent>
-        <IonTitle>Title</IonTitle>
         <IonInput value={title} onIonChange={e => setTitle(e.detail.value || '')} />
-        <IonTitle>Director</IonTitle>
         <IonInput value={director} onIonChange={e => setDirector(e.detail.value || '')} />
-        <IonTitle>Year</IonTitle>
         <IonDatetime displayFormat="MM DD YY" value={year.toString()} onIonChange={e => setYear(new Date(e.detail.value!))}></IonDatetime>
-        <IonTitle>3D</IonTitle>
         <IonCheckbox checked={treiD} onIonChange={e => setTreiD(e.detail.checked)} />
-        <IonTitle>Price</IonTitle>
         <IonInput type="number" value={price} onIonChange={e => setPrice(parseInt(e.detail.value!,0))} />
         <IonLoading isOpen={saving || deleting} />
         {savingError && (
