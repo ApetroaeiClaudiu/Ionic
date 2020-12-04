@@ -8,7 +8,7 @@ interface MoviePropsExt extends MovieProps {
   onDelete: (id?: string) => void;
 }
 
-const Movie: React.FC<MoviePropsExt> = ({ _id, director,title,year,treiD,price, onEdit,onDelete }) => {
+const Movie: React.FC<MoviePropsExt> = ({ _id, director,title,year,treiD,price,userId,version, onEdit,onDelete }) => {
   //console.log(treiD);
   return (
     <IonItem>

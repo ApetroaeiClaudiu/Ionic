@@ -32,6 +32,7 @@ const MovieEdit: React.FC<MovieEditProps> = ({ history, match }) => {
   const [price,setPrice] = useState(0);
   const [movie, setMovie] = useState<MovieProps>();
   const [userId, setUserId] =useState('');
+  const [version,setVersion] = useState(0);
 
   useEffect(() => {
     //log('useEffect');
@@ -45,11 +46,12 @@ const MovieEdit: React.FC<MovieEditProps> = ({ history, match }) => {
       setTreiD(movie.treiD);
       setPrice(movie.price);
       setUserId(movie.userId);
+      setVersion(movie.version);
     }
   }, [match.params.id, movies]);
   
   const handleSave = () => {
-    const editedMovie = movie ? { ...movie, title,director,year,treiD,price,userId } : { title,director,year,treiD,price,userId };
+    const editedMovie = movie ? { ...movie, title,director,year,treiD,price,userId,version } : { title,director,year,treiD,price,userId,version };
     saveMovie && saveMovie(editedMovie).then(() => history.goBack());
   };
   log('render');

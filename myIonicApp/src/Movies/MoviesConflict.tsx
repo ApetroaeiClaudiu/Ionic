@@ -15,6 +15,8 @@ const MoviesConflict :React.FC<RouteComponentProps> = ({history}) => {
     useEffect(setMovies,[]);
 
     function setMovies(){
+        console.log("da");
+        console.log(conflictMovies?.length)
         if(!conflictMovies || conflictMovies?.length === 0 ){
             history.goBack();
             return;
@@ -42,8 +44,8 @@ const MoviesConflict :React.FC<RouteComponentProps> = ({history}) => {
                 {firstMovie && (<Conflict movie={firstMovie} onAction={handleSave}/>)}
                 <div>Versus</div>
                 {secondMovie && (<Conflict movie={secondMovie} onAction={handleSave}/>)}
-                <IonLoading isOpen={saving}/>
-                {savingError && (<div>{savingError.message || 'Failed to save'}</div>)}
+                {/* <IonLoading isOpen={saving}/>
+                {savingError && (<div>{savingError.message || 'Failed to save'}</div>)} */}
             </IonContent>
         </IonPage>
     );

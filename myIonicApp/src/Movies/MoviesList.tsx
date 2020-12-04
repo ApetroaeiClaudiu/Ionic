@@ -49,7 +49,9 @@ const MoviesList: React.FC<RouteComponentProps> = ({history}) => {
     });
 
     function conflictMoviesEffect(){
+        console.log("IN CONFLICT EFFECT");
         if(conflictMovies && conflictMovies.length>0){
+            console.log("REDIRECTIONAM CATRE CONFLICT");
             history.push('/movies/conflict');
         }
     }
@@ -116,10 +118,10 @@ const MoviesList: React.FC<RouteComponentProps> = ({history}) => {
                 {movies && (
                     <IonList>
                         {
-                            movies.map(({_id,title,director,year,treiD,price,userId}) =>
-                                <Movie key={_id} _id={_id} title={title} director={director} year={year} treiD={treiD} price={price} userId={userId}
+                            movies.map(({_id,title,director,year,treiD,price,userId,version}) =>
+                                <Movie key={_id} _id={_id} title={title} director={director} year={year} treiD={treiD} price={price} userId={userId} version={version}
                                       onEdit={_id => history.push(`/movie/${_id}`)} onDelete={_id => {
-                                    _deleteMovie && _deleteMovie({_id: _id, title: title, director: director,year:year, treiD: treiD, price:price,userId:userId});
+                                    _deleteMovie && _deleteMovie({_id: _id, title: title, director: director,year:year, treiD: treiD, price:price,userId:userId,version:version});
                                 }}/>
                             )
                         }
@@ -137,6 +139,23 @@ const MoviesList: React.FC<RouteComponentProps> = ({history}) => {
                         <IonIcon icon={add}/>
                     </IonFabButton>
                 </IonFab>
+                <IonToast
+                    isOpen={savedOffline ? savedOffline : false}
+                    onDidDismiss={() => setSavedOffline ? setSavedOffline(false) : ceva()}
+                    message="Your settings have been saved locally since you're not connected to internet"
+                    duration={2000}
+                />
+                <IonToast
+                    isOpen={!connectedNetworkStatus || false}
+                    position="top"
+                    message="You are using this app in offline mode"
+                />
+                <IonToast
+                    cssClass={'first-time-toast'}
+                    isOpen={true}
+                    message="Welcome back"
+                    duration={10}
+                />
             </IonContent>
         </IonPage>
     );

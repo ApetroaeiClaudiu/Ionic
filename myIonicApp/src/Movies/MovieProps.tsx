@@ -5,6 +5,8 @@ export interface MovieProps {
     year:Date;
     treiD:boolean,
     price:number,
-    userId:string
+    userId:string,
+    version:number,
+    hasConflicts?:boolean
   }
   

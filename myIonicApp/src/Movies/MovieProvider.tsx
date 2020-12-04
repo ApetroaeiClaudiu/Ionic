@@ -157,10 +157,11 @@ export const MovieProvider: React.FC<MovieProviderProps> = ({children}) => {
             }
             const connected:boolean = status.connected;
             if(connected){
-                console.log("syncing");
+                console.log("syncing"); 
                 const conflicts = await syncData(token,_id);
                 setConflictMovies(conflicts);
             }
+            console.log(status.connected);
             setConnectedNetworkStatus(status.connected);
         });
         return () =>{
@@ -259,15 +260,31 @@ export const MovieProvider: React.FC<MovieProviderProps> = ({children}) => {
         try {
             // log('saveMovie started');
             if(connectedNetworkStatus===true){
+                console.log(item.version);
                 dispatch({type: SAVE_MOVIE_STARTED});
-                const savedMovie = await (item._id ? updateMovie(token, item) : createMovie(token, item));
-                //log('saveMovie succeeded');
+                const savedMovie:MovieProps = await (item._id ? updateMovie(token, item) : createMovie(token, item));
+                if(savedMovie.hasConflicts){
+                    console.log(savedMovie.version);
+                    console.log("AM GASIT CONFLICTE");
+                    item.version = savedMovie.version;
+                    const res = [];
+                    res.push(item,savedMovie);
+                    setConflictMovies(res);
+                    return;
+                }
+                //setConflictMovies([item,item]);
                 dispatch({type: SAVE_MOVIE_SUCCEEDED, payload: {item: savedMovie}}); 
                 console.log("adaugam in server");   
             }
             else{
-                item._id = item._id ? item._id : String(Date.now())
+                //alert("You are offline! The item is saved locally!");
+                if(!item._id){
+                    item._id = String(Date.now());
+                    item.version = -1;
+                }
+                //item._id = item._id ? item._id : String(Date.now())
                 item.userId = _id;
+                item.hasConflicts = false;
                 await Storage.set({
                     key: String(item._id),
                     value: JSON.stringify(item)
@@ -302,8 +319,8 @@ export const MovieProvider: React.FC<MovieProviderProps> = ({children}) => {
             await Storage.remove({
                 key: String(item._id)
             });
-          dispatch({type: DELETE_MOVIE_SUCCEEDED, payload: {item}});
-          setSavedOffline(true);        
+            dispatch({type: DELETE_MOVIE_SUCCEEDED, payload: {item}});
+            setSavedOffline(true);        
         }
       } catch (error) {
         //log('deleteMovie failed');

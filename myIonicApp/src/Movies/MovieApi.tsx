@@ -35,12 +35,12 @@ const config = {
 
 
 
-async function getMoviesLocal(_id:string):Promise<MovieProps[]>{
+export async function getMoviesLocal(_id:string):Promise<MovieProps[]>{
   const  {keys} =await Storage.keys();
   const movies = [];
   for(const i in keys){
     const key = keys[i];
-    if(!key.startsWith("_id") && !key.startsWith("user")){
+    if(!key.startsWith("_id") && !key.startsWith("user") && !key.startsWith("undefined")){
       const movie: MovieProps = await getStorage(key);
       if(movie.userId === _id){
         movies.push(movie);
@@ -52,11 +52,7 @@ async function getMoviesLocal(_id:string):Promise<MovieProps[]>{
 
 async function getStorage(key: string): Promise<any> {
   const ret = await Storage.get({key: key});
-  // console.log("GEEEEEEEEEEEETSTORAGE");
-  // console.log(ret);
   if (ret?.value) {
-      // console.log(ret.value);
-      // console.log(JSON.parse(ret.value));
       return JSON.parse(ret.value);
   }
   return Promise.resolve();
@@ -83,17 +79,17 @@ export const getMovies: (token: string, offset: number, size: number, isGood: bo
 export const syncData: (token:string,_id:string)=> Promise<MovieProps[]> = async (token:string,_id:string) => {
   console.log("SYYYYYYYYYYYYYYYYYYYYYYYYYNC")
   const movies = await getMoviesLocal(_id);
-  //<MovieProps[]>
   const result = axios.post(`${movieUrl}/sync`,movies,authConfig(token));
   result.then(async function (result){
     result.data.forEach(async(item:MovieProps) =>{
       console.log(item);
     })
   });
-  return withLogs(result,'syncData');
+  console.log("end sync");
+  return withLogs(result,'sync');
 }
 
-export const createMovie: (token: string, item: MovieProps) => Promise<MovieProps[]> = (token, item) => {
+export const createMovie: (token: string, item: MovieProps) => Promise<MovieProps> = (token, item) => {
   item._id = String(Date.now());
   const result = axios.post(movieUrl, item, authConfig(token));
   result.then(async function (result) {
@@ -105,11 +101,11 @@ export const createMovie: (token: string, item: MovieProps) => Promise<MovieProp
   return withLogs(result, 'createMovie');
 }
 
-export const updateMovie: (token: string, item: MovieProps) => Promise<MovieProps[]> = (token, item) => {
+export const updateMovie: (token: string, item: MovieProps) => Promise<MovieProps> = (token, item) => {
   const result = axios.put(`${movieUrl}/${item._id}`, item, authConfig(token));
   result.then(async function (result) {
     await Storage.set({
-      key: result.data.id!,
+      key: result.data._id,
       value: JSON.stringify(result.data),
     });
   });
@@ -141,9 +137,20 @@ export const newWebSocket = (token: string, onMessage: (data: MessageData) => vo
   ws.onerror = error => {
     //log('web socket onerror', error);
   };
-  ws.onmessage = messageEvent => {
-    //log('web socket onmessage');
-    onMessage(JSON.parse(messageEvent.data));
+  ws.onmessage = async messageEvent => {
+    // const data: MessageData = JSON.parse(messageEvent.data);
+    // const {type, payload: item} = data;
+    // if (type === 'created' || type === 'updated') {
+    //     await Storage.set({
+    //       key: String(item._id),
+    //       value: JSON.stringify(item)
+    //   });
+    // } else if (type === 'deleted' && item._id) {
+    //     await Storage.remove({
+    //       key: String(item._id)
+    //   });
+    // }
+    // onMessage(data);
   };
   return () => {
     ws.close();
