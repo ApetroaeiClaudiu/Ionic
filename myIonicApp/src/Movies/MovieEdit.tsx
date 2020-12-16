@@ -1,14 +1,21 @@
 import React, { useContext, useEffect, useState } from 'react';
 import {
+  IonActionSheet,
   IonButton,
   IonButtons,
   IonCheckbox,
+  IonCol,
   IonContent,
   IonDatetime,
+  IonFab,
+  IonFabButton,
   IonHeader,
+  IonIcon,
+  IonImg,
   IonInput,
   IonLoading,
   IonPage,
+  IonRow,
   IonTitle,
   IonToolbar
 } from '@ionic/react';
@@ -16,6 +23,10 @@ import { getLogger } from '../core';
 import { MovieContext } from './MovieProvider';
 import { RouteComponentProps } from 'react-router';
 import { MovieProps } from './MovieProps';
+import { usePhotoGallery } from './usePhotoGallery';
+import { camera, trash } from 'ionicons/icons';
+import { useMyLocation } from '../maps/useLocation';
+import { MyMap } from '../maps/MyMap';
 
 const log = getLogger('MovieEdit');
 
@@ -24,6 +35,9 @@ interface MovieEditProps extends RouteComponentProps<{
 }> {}
 
 const MovieEdit: React.FC<MovieEditProps> = ({ history, match }) => {
+  const {myLocation, updateMyPosition} = useMyLocation();
+  const { lat: lat2, lng: lng2 } = myLocation || {}
+  const { takePhoto} = usePhotoGallery();
   const { movies, saving, deleting,  savingError,saveMovie } = useContext(MovieContext);
   const [title,setTitle] = useState('');
   const [director,setDirector] = useState('');
@@ -33,9 +47,11 @@ const MovieEdit: React.FC<MovieEditProps> = ({ history, match }) => {
   const [movie, setMovie] = useState<MovieProps>();
   const [userId, setUserId] =useState('');
   const [version,setVersion] = useState(0);
+  const [webViewPath,setWebViewPath] = useState('');
+  const [lat, setLat] = useState(0);
+  const [lng, setLng] = useState(0);
 
   useEffect(() => {
-    //log('useEffect');
     const routeId = match.params.id || '';
     const movie = movies?.find(mov => mov._id?.toString() === routeId);
     setMovie(movie);
@@ -47,14 +63,35 @@ const MovieEdit: React.FC<MovieEditProps> = ({ history, match }) => {
       setPrice(movie.price);
       setUserId(movie.userId);
       setVersion(movie.version);
+      setLat(movie.lat);
+      setLng(movie.lng);
+      setWebViewPath(movie.webViewPath);
+      updateMyPosition('current', movie.lat, movie.lng);
     }
   }, [match.params.id, movies]);
   
   const handleSave = () => {
-    const editedMovie = movie ? { ...movie, title,director,year,treiD,price,userId,version } : { title,director,year,treiD,price,userId,version };
+    const editedMovie = movie ? { ...movie, title,director,year,treiD,price,userId,version,webViewPath,lat,lng } : { title,director,year,treiD,price,userId,version,webViewPath,lat,lng };
     saveMovie && saveMovie(editedMovie).then(() => history.goBack());
   };
-  log('render');
+
+  async function handlePhotoChange() {
+    const image = await takePhoto();
+    if (!image) {
+      setWebViewPath('');
+    } else {
+      setWebViewPath(image);
+    }
+  }
+
+  function handleMapOnClick() {
+    return (e: any) => {
+      updateMyPosition('current', e.latLng.lat(), e.latLng.lng());
+      setLat(e.latLng.lat());
+      setLng(e.latLng.lng());
+    }
+  }
+
   return (
     <IonPage>
       <IonHeader>
@@ -73,6 +110,14 @@ const MovieEdit: React.FC<MovieEditProps> = ({ history, match }) => {
         <IonDatetime displayFormat="MM DD YY" value={year.toString()} onIonChange={e => setYear(new Date(e.detail.value!))}></IonDatetime>
         <IonCheckbox checked={treiD} onIonChange={e => setTreiD(e.detail.checked)} />
         <IonInput type="number" value={price} onIonChange={e => setPrice(parseInt(e.detail.value!,0))} />
+        {webViewPath && (<img onClick={handlePhotoChange} src={webViewPath} width={'100px'} height={'100px'}/>)}
+        {!webViewPath && (<img onClick={handlePhotoChange} src={'https://static.thenounproject.com/png/187803-200.png'} width={'100px'} height={'100px'}/>)}
+        <MyMap
+            lat={lat2}
+            lng={lng2}
+            onMapClick={handleMapOnClick()}
+        />
+        
         <IonLoading isOpen={saving || deleting} />
         {savingError && (
           <div>{savingError.message || 'Failed to save movie'}</div>

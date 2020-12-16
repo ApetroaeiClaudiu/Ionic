@@ -178,6 +178,7 @@ export const MovieProvider: React.FC<MovieProviderProps> = ({children}) => {
             //log('fetchMovies started');
             dispatch({type: FETCH_MOVIES_STARTED});
             const movies = await getMovies(token, offset, size, isGood, searchName);
+            console.log(movies);
             //log('fetchMovies succeeded');
             dispatch({type: FETCH_MOVIES_SUCCEEDED, payload: {movies}});
         } catch (error) {
@@ -262,6 +263,7 @@ export const MovieProvider: React.FC<MovieProviderProps> = ({children}) => {
             if(connectedNetworkStatus===true){
                 console.log(item.version);
                 dispatch({type: SAVE_MOVIE_STARTED});
+                console.log("UPDATE " + item.webViewPath);
                 const savedMovie:MovieProps = await (item._id ? updateMovie(token, item) : createMovie(token, item));
                 if(savedMovie.hasConflicts){
                     console.log(savedMovie.version);

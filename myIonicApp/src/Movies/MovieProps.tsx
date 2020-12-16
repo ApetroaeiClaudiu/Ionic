@@ -7,6 +7,9 @@ export interface MovieProps {
     price:number,
     userId:string,
     version:number,
-    hasConflicts?:boolean
+    hasConflicts?:boolean,
+    webViewPath: string;
+    lat:number;
+    lng:number;
   }
   

@@ -118,10 +118,10 @@ const MoviesList: React.FC<RouteComponentProps> = ({history}) => {
                 {movies && (
                     <IonList>
                         {
-                            movies.map(({_id,title,director,year,treiD,price,userId,version}) =>
-                                <Movie key={_id} _id={_id} title={title} director={director} year={year} treiD={treiD} price={price} userId={userId} version={version}
+                            movies.map(({_id,title,director,year,treiD,price,userId,version,webViewPath,lat,lng}) =>
+                                <Movie key={_id} _id={_id} title={title} director={director} year={year} treiD={treiD} price={price} userId={userId} version={version} webViewPath={webViewPath} lat={lat} lng={lng}
                                       onEdit={_id => history.push(`/movie/${_id}`)} onDelete={_id => {
-                                    _deleteMovie && _deleteMovie({_id: _id, title: title, director: director,year:year, treiD: treiD, price:price,userId:userId,version:version});
+                                    _deleteMovie && _deleteMovie({_id: _id, title: title, director: director,year:year, treiD: treiD, price:price,userId:userId,version:version,webViewPath:webViewPath,lat:lat,lng:lng});
                                 }}/>
                             )
                         }
